@@ -18,7 +18,7 @@ from datetime import timedelta
 plt.close('all')
 
 
-########## define aestetics ################################# 
+########## define aestetics ######################
 
 import seaborn as sns
 sns.set_style("darkgrid" )

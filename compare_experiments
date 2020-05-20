@@ -1,0 +1,123 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May 19 14:20:16 2020
+
+@author: Jens Ringsholm
+"""
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+
+plt.close('all')
+
+import matplotlib.style as style
+style.use('fivethirtyeight')
+
+################### functions ###########################
+
+def datetimeindex_to_relative_timeindex(df, interval=None):
+    
+    '''
+    changes pandas dataframe index from datetime to time relative to experiement start
+    '''
+    
+    df_conv = df
+    
+    df_conv.index = df_conv.index.astype(np.int64) // 10**9 - (df_conv.index.astype(np.int64).min() // 10**9)
+
+    if interval == None or interval == 's':
+        pass
+    if interval == 'm':
+        df_conv.index = df_conv.index/60 
+    
+    if interval == 'h':
+        df_conv.index = df_conv.index/360 
+    
+    if interval == 'd':
+        df_conv.index = (df_conv.index/360)/24        
+    
+    return df_conv
+
+
+
+def readCSV(name, indexcol):    
+
+    df = pd.read_csv(name, index_col = indexcol, parse_dates=True)
+    
+    df['co2'] = df['co2'].expanding(1).mean()
+    
+    df = df.drop(columns=['Temp-plaat', 'Temp-tilt'])
+    
+    return df
+
+
+################# read all csvs #####################
+
+df0508 = readCSV('0508/data/df_int.csv', 'dates' )
+df0505 = readCSV('0505/data/df_int.csv', 'dates' )
+df0504 = readCSV('0505/data/df_int.csv', 'dates' )
+df0501 = readCSV('0501/data/df_int.csv', 'dates' )
+df0427 = readCSV('0427/data/df_int.csv', 'dates' )
+df0424 = readCSV('0424/data/df_int.csv', 'dates' )
+df0423 = readCSV('0423/data/df_int.csv', 'dates' )
+df0421 = readCSV('0421/data/df_int.csv', 'dates' )
+df0414 = readCSV('0414/data/df_int.csv', 'dates' )
+
+
+
+
+############# changing datetime to relsative time
+
+df0508 = datetimeindex_to_relative_timeindex(df0508)
+df0505 = datetimeindex_to_relative_timeindex(df0505)
+df0504 = datetimeindex_to_relative_timeindex(df0504)
+df0501 = datetimeindex_to_relative_timeindex(df0501)
+df0427 = datetimeindex_to_relative_timeindex(df0427)
+df0424 = datetimeindex_to_relative_timeindex(df0424)
+df0423 = datetimeindex_to_relative_timeindex(df0423)
+df0421 = datetimeindex_to_relative_timeindex(df0421)
+df0414 = datetimeindex_to_relative_timeindex(df0414)
+
+
+######### refine and clean data ########################
+
+df0504 = df0504[(np.abs(stats.zscore(df0504)) < 30).all(axis=1)]
+
+df0501 = df0501[:15000].drop(columns=['d2/d1'])
+df0501['SG-plaat'] = df0501['SG-plaat']+0.045 
+
+df0427 = df0427[:15000]
+
+df0424 = df0424[['BPM', 'SG-plaat', 'SG-tilt',  'co2', 'pres', 'temp_ext']]
+df0423 = df0423[['BPM', 'SG-plaat', 'SG-tilt',  'co2', 'pres', 'temp_ext']]
+
+
+
+############3 plot all parameters ##########################
+
+fig11, axes = plt.subplots(nrows=2, ncols=3, figsize = (20, 9))
+
+linewidth = 2
+
+df0508.plot(subplots=True, ax=axes, color = 'b', lw=linewidth)
+#df0505.plot(subplots=True, ax=axes,  color = 'r')
+df0504.plot(subplots=True, ax=axes,  color = 'orange', lw=linewidth)
+df0501.plot(subplots=True, ax=axes,  color = 'green', lw=linewidth)
+df0427.plot(subplots=True, ax=axes,  color = 'r', lw=linewidth)
+df0424.plot(subplots=True, ax=axes,  color = 'yellow', lw=linewidth)
+df0423.plot(subplots=True, ax=axes,  color = 'cyan', lw=linewidth)
+df0421.plot(subplots=True, ax=axes,  color = 'magenta', lw=linewidth)
+#df0414.plot(subplots=True, ax=axes,  color = 'pink')
+
+
+# remove all legends 
+for i in range(2):
+    axes[i,0].legend().remove()
+    for j in range(3):
+        axes[i,j].legend().remove()
+
+plt.tight_layout()
+#plt.savefig('figs\InterpolatedOverview.png')
+
+
